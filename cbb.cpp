@@ -14,10 +14,12 @@
 #include <cstring>
 
 cbb cbb::lms[64];
+int cbb::nlm;
+cbb cbb::stack[512];
+cbb cbb::bnm;
 cbb::board cbb::jumps[16][64];
-uint32_t cbb::nlm;
 
-cbb::cbb(const char sboard[32], int player, int time) {
+cbb::cbb(const char sboard[32], int player) {
 	for (int i = 0; i < 32; i++) {
 		switch (sboard[i]) {
 			case '1':
@@ -37,10 +39,35 @@ cbb::cbb(const char sboard[32], int player, int time) {
 		}
 	}
 	p = player;
-	tl = time;
 }
 
+inline int cbb::score(int player) {
+	uint32_t b = player ? cb.b : cb.w;
+	return numBits(b);
+}
 
+time_t cbb::aiPickMove(int timeLimit) {
+	int i, nnlm, sind, maxd = 0, pick = 0;
+
+	time_t end, start = time(NULL);
+	genLegalMoves();
+	if (nlm == 0) return -1;
+	if (nlm == 1) {
+		*this = lms[0];
+		end = time(NULL);
+		return std::difftime(end,start);
+	}
+	nnlm = nlm;
+	while (++maxd<16) {
+		for (i = 0; i < nnlm; i++) {
+			stack[sind=0] = *this;
+		}
+	}
+	*this = lms[pick];
+	end = time(NULL);
+
+	return std::difftime(end,start);
+}
 
 bool cbb::humanPickMove(uint32_t pick) {
 	if (pick < nlm) {
@@ -48,18 +75,6 @@ bool cbb::humanPickMove(uint32_t pick) {
 		return true;
 	}
 	return false;
-}
-
-time_t cbb::aiPickMove() {
-	time_t start = time(NULL);
-	genLegalMoves();
-	time_t end = time(NULL);
-	if (lms[0].cb.nonempty()) {
-		*this = lms[0];
-		return std::difftime(end,start);
-	} else {
-		return -1;
-	}
 }
 
 void cbb::printcb() {
