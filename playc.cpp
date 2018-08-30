@@ -50,7 +50,7 @@ int main() {
 		}
 	}
 
-	cbb game = cbb(board.c_str(),player,timeLimit);
+	cbb game = cbb(board.c_str(),player);
 	std::cout << "\n";
 	game.printcb();
 	int pick = 0;
@@ -58,7 +58,7 @@ int main() {
 	while (gamewon < 0) {
 		time_t time = 0;
 		if ((player0c && game.getPlayer() == 0) || (player1c && game.getPlayer() == 1)) {
-			if((time = game.aiPickMove()) >= 0) {
+			if((time = game.aiPickMove(timeLimit)) >= 0) {
 				std::cout << "\nPlayer " << !game.getPlayer() << " took " << time << " seconds to make its move.\n";
 				game.printcb();
 			} else {

@@ -69,7 +69,7 @@ time_t cbb::aiPickMove(int timeLimit) {
 	return std::difftime(end,start);
 }
 
-bool cbb::humanPickMove(uint32_t pick) {
+bool cbb::humanPickMove(int pick) {
 	if (pick < nlm) {
 		*this = lms[pick];
 		return true;
@@ -113,20 +113,20 @@ void cbb::printcb() {
 
 uint32_t cbb::printlms() {
 	for (int i = 0; i < 16; i++)
-		for (uint32_t j = 1; j < nlm; j++)
+		for (int j = 1; j < nlm; j++)
 			jumps[i][j] = {0,0,0};
 
 	genLegalMoves();
 
 	for (int i = 0; i < 16; i++) {
-		for (uint32_t j = 0; j < nlm; j++) {
+		for (int j = 0; j < nlm; j++) {
 			if (j > 0 && !jumps[i][j].nonempty())
 				jumps[i][j] = jumps[i][j-1];
 			else
 				if (p) flipboard(jumps[i][j]);
 		}
 	}
-	for (uint32_t c = 0; c < nlm; c++) {
+	for (int c = 0; c < nlm; c++) {
 		uint32_t start;
 		uint32_t end;
 		uint32_t sxoe;

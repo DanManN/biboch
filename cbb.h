@@ -87,7 +87,7 @@ class cbb {
 
 			b32 = b32 - ((b32 >> 1) & 0x55555555);                    // reuse input as temp
 			b32 = (b32 & 0x33333333) + ((b32 >> 2) & 0x33333333);     // temp
-			b32 = ((b32 + (b32 >> 4) & 0xF0F0F0F) * 0x1010101) >> 24; // count
+			b32 = (((b32 + (b32 >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
 
 			return b32;
 		}
@@ -220,7 +220,7 @@ class cbb {
 		inline void genLegalMoves(cbb *mptr = lms) {
 			if (p) flipboard(cb);
 			genWmoves(mptr);
-			for (uint32_t i = 0; i < nlm; i++) {
+			for (int i = 0; i < nlm; i++) {
 				mptr[i].cb.k |= mptr[i].cb.w & 15;
 				if (p) flipboard(mptr[i].cb);
 				mptr[i].p = !p;
@@ -248,7 +248,7 @@ class cbb {
 		 * return the time in milliseconds to find a move */
 
 		/** update the board with move picked by human **/
-		bool humanPickMove(uint32_t pick);
+		bool humanPickMove(int pick);
 		/* returns false if pick doesn't point to a move, true otherwise */
 
 		/** return the player whose move it is **/
