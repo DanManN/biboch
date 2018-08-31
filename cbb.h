@@ -53,8 +53,8 @@ class cbb {
 	/*** Utility Functions ***/
 
 		static cbb lms[64];         // array for holding legal moves
-		static int nlm;        // variable to hold # of legal moves
-		static cbb stack[512];      // stack for dfs search
+		static int nlm;             // variable to hold # of legal moves
+		static cbb stack[2048];     // stack for dfs search
 		static cbb bnm;             // variable to hold current best next move
 		static board jumps[16][64]; //traceback array for showing jumps
 
@@ -169,7 +169,7 @@ class cbb {
 				}
 			}
 			if (cantjump) {
-				lms[nlm++].cb = b;
+				mptr[nlm++].cb = b;
 			}
 		}
 
@@ -243,9 +243,12 @@ class cbb {
 		inline int score(int player);
 
 		/** update the board with move picked by human **/
-		time_t aiPickMove(int timeLimit);
-		/* return -1 if AI can't move, otherwise          *
-		 * return the time in milliseconds to find a move */
+		int *aiPickMove(int timeLimit);
+		/* returns {                                          *
+		 *          # of move picked (-1 if lost),            *
+		 *          the time in seconds spent picking a move, *
+		 *          the depth searched                        *
+		 *         }                                          */
 
 		/** update the board with move picked by human **/
 		bool humanPickMove(int pick);

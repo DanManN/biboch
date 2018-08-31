@@ -15,7 +15,7 @@
 
 cbb cbb::lms[64];
 int cbb::nlm;
-cbb cbb::stack[512];
+cbb cbb::stack[2048];
 cbb cbb::bnm;
 cbb::board cbb::jumps[16][64];
 
@@ -42,31 +42,54 @@ cbb::cbb(const char sboard[32], int player) {
 }
 
 inline int cbb::score(int player) {
-	uint32_t b = player ? cb.b : cb.w;
-	return numBits(b);
+	uint32_t pb = player ? cb.b : cb.w;
+	uint32_t ob = player ? cb.w : cb.b;
+	return numBits(pb)-numBits(ob);
 }
 
-time_t cbb::aiPickMove(int timeLimit) {
-	int i, nnlm, sind, maxd = 0, pick = 0;
+int *cbb::aiPickMove(int timeLimit) {
+	int i, nnlm, sind, dd = 0;
+	unsigned long d, maxd = 0;
+	int score = 0, maxscore = 0;
+	int *pick = new int[3]{-1,0,0};
 
 	time_t end, start = time(NULL);
 	genLegalMoves();
-	if (nlm == 0) return -1;
-	if (nlm == 1) {
-		*this = lms[0];
-		end = time(NULL);
-		return std::difftime(end,start);
-	}
-	nnlm = nlm;
-	while (++maxd<16) {
-		for (i = 0; i < nnlm; i++) {
-			stack[sind=0] = *this;
+	if (nlm == 0) {        // computer player lost
+		return pick;
+	} else if (nlm == 1) { // only one valid move
+		pick[0] = 0;
+	} else {               // do search
+		nnlm = nlm;
+		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
+			for (i = 0; i < nnlm; i++) {           // start search at each legal move
+				stack[0] = lms[i];
+				sind = 1;
+				d = 1;
+				while (sind-- > 0) {               // pop the stack if not empty
+					if((score = stack[sind].score(!p)) > maxscore) {
+						maxscore = score;
+						pick[0] = i;
+					}
+					if (d < maxd) {
+						stack[sind].genLegalMoves(&stack[sind]);
+						sind+=nlm;
+						if (nlm > 0) d++;
+					} else {
+						if(++dd>nlm) {
+							d--;
+							dd=0;
+						}
+					}
+				}
+			}
 		}
 	}
-	*this = lms[pick];
+	*this = lms[pick[0]];
 	end = time(NULL);
-
-	return std::difftime(end,start);
+	pick[1] = std::difftime(end,start);
+	pick[2] = maxd;
+	return pick;
 }
 
 bool cbb::humanPickMove(int pick) {
@@ -122,8 +145,10 @@ uint32_t cbb::printlms() {
 		for (int j = 0; j < nlm; j++) {
 			if (j > 0 && !jumps[i][j].nonempty())
 				jumps[i][j] = jumps[i][j-1];
-			else
+			else {
+				jumps[i][j].k |= jumps[i][j].w & 15;
 				if (p) flipboard(jumps[i][j]);
+			}
 		}
 	}
 	for (int c = 0; c < nlm; c++) {

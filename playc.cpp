@@ -56,10 +56,12 @@ int main() {
 	int pick = 0;
 	int gamewon = -1;
 	while (gamewon < 0) {
-		time_t time = 0;
+		int *aimove;
 		if ((player0c && game.getPlayer() == 0) || (player1c && game.getPlayer() == 1)) {
-			if((time = game.aiPickMove(timeLimit)) >= 0) {
-				std::cout << "\nPlayer " << !game.getPlayer() << " took " << time << " seconds to make its move.\n";
+			game.printlms();
+			aimove = game.aiPickMove(timeLimit);
+			if(aimove[0] >= 0) {
+				std::cout << "\nComputer Player " << !game.getPlayer() << " took move #" << aimove[0] << " searching for " << aimove[1] << " seconds to a maximum depth of " << aimove[2] << "\n";
 				game.printcb();
 			} else {
 				gamewon = !game.getPlayer();
