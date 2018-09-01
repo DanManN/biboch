@@ -19,8 +19,8 @@
 #ifndef _CBB_H
 #define _CBB_H
 
+#include <limits>
 #include <cstdint>
-#include <ctime>
 //#include <iostream>
 
 class cbb {
@@ -52,11 +52,14 @@ class cbb {
 
 	/*** Utility Functions ***/
 
-		static cbb lms[64];         // array for holding legal moves
-		static int nlm;             // variable to hold # of legal moves
-		static cbb stack[2048];     // stack for dfs search
-		static cbb bnm;             // variable to hold current best next move
-		static board jumps[16][64]; //traceback array for showing jumps
+		#define MAX_LMS (32)
+		#define MAX_CJUMPS (16)
+		#define STACK_SIZE (4096)
+
+		static cbb lms[MAX_LMS];                 // array for holding legal moves
+		static int nlm;                          // variable to hold # of legal moves
+		static cbb stack[STACK_SIZE];            // stack for alphabeta search
+		static board jumps[MAX_CJUMPS][MAX_LMS]; //traceback array for showing jumps
 
 		#define UR3 (1<<24 | 1<<25 | 1<<26 | 1<<16 | 1<<17 | 1<<18 | 1<<8 | 1<<9 | 1<<10)
 		#define UL5 (1<<29 | 1<<30 | 1<<31 | 1<<21 | 1<<22 | 1<<23 | 1<<13 | 1<<14 | 1<<15 | 1<<05 | 1<<06 | 1<<07)
@@ -228,6 +231,7 @@ class cbb {
 			if (p) flipboard(cb);
 		}
 
+		
 	public:
 
 		/** construct board from string **/
@@ -238,17 +242,20 @@ class cbb {
 			cb = b;
 			p = player;
 		}
-		
+
 		/* return the score of the board for #player */
 		inline int score(int player);
 
+		/* perform an alpha beta search on checker board node and return the score*/
+		inline int alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP);
+
 		/** update the board with move picked by human **/
 		int *aiPickMove(int timeLimit);
-		/* returns {                                          *
-		 *          # of move picked (-1 if lost),            *
-		 *          the time in seconds spent picking a move, *
-		 *          the depth searched                        *
-		 *         }                                          */
+		/* returns {                                               *
+		 *          # of move picked (-1 if lost),                 *
+		 *          the time in milliseconds spent picking a move, *
+		 *          the depth searched                             *
+		 *         }                                               */
 
 		/** update the board with move picked by human **/
 		bool humanPickMove(int pick);

@@ -10,14 +10,14 @@
 #include "cbb.h"
 #include <iostream>
 #include <iomanip>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 
-cbb cbb::lms[64];
+cbb cbb::lms[MAX_LMS];
 int cbb::nlm;
-cbb cbb::stack[2048];
-cbb cbb::bnm;
-cbb::board cbb::jumps[16][64];
+cbb cbb::stack[STACK_SIZE];
+cbb::board cbb::jumps[MAX_CJUMPS][MAX_LMS];
 
 cbb::cbb(const char sboard[32], int player) {
 	for (int i = 0; i < 32; i++) {
@@ -44,50 +44,78 @@ cbb::cbb(const char sboard[32], int player) {
 inline int cbb::score(int player) {
 	uint32_t pb = player ? cb.b : cb.w;
 	uint32_t ob = player ? cb.w : cb.b;
+	if (numBits(ob) == 0)
+		return std::numeric_limits<int>::max();
 	return numBits(pb)-numBits(ob);
 }
 
+inline int cbb::alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP) {
+	int score, bscore, i;
+
+	if (d == 0)
+		return node->score(p);
+	if (mP) {
+		bscore = std::numeric_limits<int>::min();
+		genLegalMoves(node);
+		if (nlm == 0)
+			return node->score(node->getPlayer());
+		for (i = nlm-1; i >= 0; i--) {
+			if ((score = alphabeta(node+i, d - 1, alpha, beta, false)) > bscore)
+				bscore = score;
+			if (bscore > alpha)
+				alpha = bscore;
+			if (alpha >= beta)
+				break;
+		}
+		return bscore;
+	} else {
+		bscore = std::numeric_limits<int>::max();
+		genLegalMoves(node);
+		if (nlm == 0)
+			return node->score(node->getPlayer());
+		for (i = nlm-1; i > 0; i--) {
+			if ((score = alphabeta(node+i, d - 1, alpha, beta, true)) < bscore)
+				bscore = score;
+			if (bscore < beta)
+				beta = bscore;
+			if (alpha >= beta)
+				break;
+		}
+		return bscore;
+	}
+}
+
+using namespace std::chrono;
 int *cbb::aiPickMove(int timeLimit) {
-	int i, nnlm, sind, dd = 0;
-	unsigned long d, maxd = 0;
-	int score = 0, maxscore = 0;
+	int i, score, bscore = std::numeric_limits<int>::min();
+	uint32_t maxd = 0;
 	int *pick = new int[3]{-1,0,0};
 
-	time_t end, start = time(NULL);
+	time_point<system_clock, system_clock::duration> end, start = system_clock::now();
 	genLegalMoves();
 	if (nlm == 0) {        // computer player lost
 		return pick;
 	} else if (nlm == 1) { // only one valid move
 		pick[0] = 0;
 	} else {               // do search
-		nnlm = nlm;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
-			for (i = 0; i < nnlm; i++) {           // start search at each legal move
+			for (i = nlm-1; i >= 0; i--) {         // start search at each legal move
+				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*3/4)
+					goto BREAK;
 				stack[0] = lms[i];
-				sind = 1;
-				d = 1;
-				while (sind-- > 0) {               // pop the stack if not empty
-					if((score = stack[sind].score(!p)) > maxscore) {
-						maxscore = score;
-						pick[0] = i;
-					}
-					if (d < maxd) {
-						stack[sind].genLegalMoves(&stack[sind]);
-						sind+=nlm;
-						if (nlm > 0) d++;
-					} else {
-						if(++dd>nlm) {
-							d--;
-							dd=0;
-						}
-					}
+				if ((score = alphabeta(stack, maxd, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false)) > bscore) {
+					bscore = score;
+					pick[0] = i;
 				}
+				if (bscore == std::numeric_limits<int>::max())
+					goto BREAK;
 			}
 		}
 	}
+	BREAK:
 	*this = lms[pick[0]];
-	end = time(NULL);
-	pick[1] = std::difftime(end,start);
+	end = system_clock::now();
+	pick[1] = duration_cast<milliseconds>(end-start).count();
 	pick[2] = maxd;
 	return pick;
 }
@@ -135,13 +163,13 @@ void cbb::printcb() {
 }
 
 uint32_t cbb::printlms() {
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < MAX_CJUMPS; i++)
 		for (int j = 1; j < nlm; j++)
 			jumps[i][j] = {0,0,0};
 
 	genLegalMoves();
 
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < MAX_CJUMPS; i++) {
 		for (int j = 0; j < nlm; j++) {
 			if (j > 0 && !jumps[i][j].nonempty())
 				jumps[i][j] = jumps[i][j-1];
@@ -183,7 +211,7 @@ uint32_t cbb::printlms() {
 			std::cout << "[" << std::setw(2) << std::setfill('0') << c << "] ";
 			std::cout << std::setw(2) << std::setfill('0') << std::log2(start);
 			std::cout << " -> " << std::setw(2) << std::setfill('0') << std::log2(end);
-			while (jumps[k][c] != lms[c].cb && k < 15) {
+			while (jumps[k][c] != lms[c].cb && k < MAX_CJUMPS-1) {
 				k++;
 				if (p) {
 					end = jumps[k][c].b;

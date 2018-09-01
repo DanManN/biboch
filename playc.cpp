@@ -15,7 +15,7 @@ int main() {
 
 	std::string board = "";
 	int player = 0;
-	int timeLimit = 0;
+	double timeLimit = 0;
 	while (board == "") {
 		std::cout << "Load a game from a file (press enter for default): ";
 		std::getline(std::cin,input);
@@ -43,7 +43,7 @@ int main() {
 			std::cout << "Enter a time limit for the computer to make a move (sec): ";
 			std::getline(std::cin,input);
 			try {
-				timeLimit = std::stoi(input);
+				timeLimit = std::stod(input);
 			} catch (std::exception &) {
 				std::cout << "Invalid time limit '" << input << "' !\n";
 			}
@@ -59,9 +59,9 @@ int main() {
 		int *aimove;
 		if ((player0c && game.getPlayer() == 0) || (player1c && game.getPlayer() == 1)) {
 			game.printlms();
-			aimove = game.aiPickMove(timeLimit);
+			aimove = game.aiPickMove(timeLimit*1000);
 			if(aimove[0] >= 0) {
-				std::cout << "\nComputer Player " << !game.getPlayer() << " took move #" << aimove[0] << " searching for " << aimove[1] << " seconds to a maximum depth of " << aimove[2] << "\n";
+				std::cout << "\nComputer Player " << !game.getPlayer() << " took move #" << aimove[0] << " searching for " << aimove[1]/1000.0 << " seconds to a maximum depth of " << aimove[2] << "\n";
 				game.printcb();
 			} else {
 				gamewon = !game.getPlayer();
