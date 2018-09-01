@@ -5,7 +5,7 @@
 int main() {
 	std::string input;
 
-	std::cout << "Will player #0 be the computer? (y/N): "; 
+	std::cout << "Will player #0 be the computer? (y/N): ";
 	std::getline(std::cin,input);
 	bool player0c = std::tolower(input[0]) == 'y';
 
@@ -39,11 +39,13 @@ int main() {
 	}
 
 	if (player0c || player1c) {
-		while (timeLimit < 1) {
+		while (timeLimit <= 0) {
 			std::cout << "Enter a time limit for the computer to make a move (sec): ";
 			std::getline(std::cin,input);
 			try {
 				timeLimit = std::stod(input);
+				if (timeLimit <= 0)
+					std::cout << "Time limit must be greater than 0\n";
 			} catch (std::exception &) {
 				std::cout << "Invalid time limit '" << input << "' !\n";
 			}

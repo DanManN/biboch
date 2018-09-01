@@ -44,6 +44,7 @@ cbb::cbb(const char sboard[32], int player) {
 inline int cbb::score(int player) {
 	uint32_t pb = player ? cb.b : cb.w;
 	uint32_t ob = player ? cb.w : cb.b;
+	//std::cerr << pb << " " << ob << "\n";
 	if (numBits(ob) == 0)
 		return std::numeric_limits<int>::max();
 	return numBits(pb)-numBits(ob);
@@ -54,40 +55,36 @@ inline int cbb::alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP) {
 
 	if (d == 0)
 		return node->score(p);
+	node->genLegalMoves(&node[1]);
+	if (nlm == 0)
+		return node->score(p);
 	if (mP) {
 		bscore = std::numeric_limits<int>::min();
-		genLegalMoves(node);
-		if (nlm == 0)
-			return node->score(node->getPlayer());
-		for (i = nlm-1; i >= 0; i--) {
-			if ((score = alphabeta(node+i, d - 1, alpha, beta, false)) > bscore)
+		for (i = nlm; i > 0; i--) {
+			if ((score = alphabeta(&node[i], d - 1, alpha, beta, false)) > bscore)
 				bscore = score;
 			if (bscore > alpha)
 				alpha = bscore;
 			if (alpha >= beta)
 				break;
 		}
-		return bscore;
 	} else {
 		bscore = std::numeric_limits<int>::max();
-		genLegalMoves(node);
-		if (nlm == 0)
-			return node->score(node->getPlayer());
-		for (i = nlm-1; i > 0; i--) {
-			if ((score = alphabeta(node+i, d - 1, alpha, beta, true)) < bscore)
+		for (i = nlm; i > 0; i--) {
+			if ((score = alphabeta(&node[i], d - 1, alpha, beta, true)) < bscore)
 				bscore = score;
 			if (bscore < beta)
 				beta = bscore;
 			if (alpha >= beta)
 				break;
 		}
-		return bscore;
 	}
+	return bscore;
 }
 
 using namespace std::chrono;
 int *cbb::aiPickMove(int timeLimit) {
-	int score, i=0, bscore = std::numeric_limits<int>::min();
+	int score, nlmm1, i=0, bscore = std::numeric_limits<int>::min();
 	uint32_t maxd = 0;
 	int *pick = new int[4]{-1};
 
@@ -98,8 +95,9 @@ int *cbb::aiPickMove(int timeLimit) {
 	} else if (nlm == 1) { // only one valid move
 		pick[0] = 0;
 	} else {               // do search
+		nlmm1 = nlm-1;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
-			for (i = nlm-1; i >= 0; i--) {         // start search at each legal move
+			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
 				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*3/4)
 					goto BREAK;
 				stack[0] = lms[i];
