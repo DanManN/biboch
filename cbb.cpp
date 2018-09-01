@@ -87,9 +87,9 @@ inline int cbb::alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP) {
 
 using namespace std::chrono;
 int *cbb::aiPickMove(int timeLimit) {
-	int i, score, bscore = std::numeric_limits<int>::min();
+	int score, i=0, bscore = std::numeric_limits<int>::min();
 	uint32_t maxd = 0;
-	int *pick = new int[3]{-1,0,0};
+	int *pick = new int[4]{-1};
 
 	time_point<system_clock, system_clock::duration> end, start = system_clock::now();
 	genLegalMoves();
@@ -117,6 +117,7 @@ int *cbb::aiPickMove(int timeLimit) {
 	end = system_clock::now();
 	pick[1] = duration_cast<milliseconds>(end-start).count();
 	pick[2] = maxd;
+	pick[3] = i;
 	return pick;
 }
 

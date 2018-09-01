@@ -254,7 +254,8 @@ class cbb {
 		/* returns {                                               *
 		 *          # of move picked (-1 if lost),                 *
 		 *          the time in milliseconds spent picking a move, *
-		 *          the depth searched                             *
+		 *          the depth searched,                            *
+		 *          whether max depth was only partially searched  *
 		 *         }                                               */
 
 		/** update the board with move picked by human **/

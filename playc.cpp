@@ -61,7 +61,10 @@ int main() {
 			game.printlms();
 			aimove = game.aiPickMove(timeLimit*1000);
 			if(aimove[0] >= 0) {
-				std::cout << "\nComputer Player " << !game.getPlayer() << " took move #" << aimove[0] << " searching for " << aimove[1]/1000.0 << " seconds to a maximum depth of " << aimove[2] << "\n";
+				std::cout << "\nComputer Player " << !game.getPlayer() \
+					<< " took move #" << aimove[0] \
+					<< " searching for " << aimove[1]/1000.0 \
+					<< " seconds to a maximum " << (aimove[3] ? "partial ": "") << "depth of " << aimove[2] << "\n";
 				game.printcb();
 			} else {
 				gamewon = !game.getPlayer();
