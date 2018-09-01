@@ -47,7 +47,11 @@ inline int cbb::score(int player) {
 	//std::cerr << pb << " " << ob << "\n";
 	if (numBits(ob) == 0)
 		return std::numeric_limits<int>::max();
-	return numBits(pb)-numBits(ob);
+	return (numBits(pb)) 
+			+ (numBits(pb&cb.k)*3)
+			- (numBits(ob))
+			- (numBits(ob&cb.k)*3)
+			;
 }
 
 inline int cbb::alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP) {
@@ -98,7 +102,7 @@ int *cbb::aiPickMove(int timeLimit) {
 		nlmm1 = nlm-1;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
 			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
-				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*3/4)
+				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*nlmm1/(nlmm1+3))
 					goto BREAK;
 				stack[0] = lms[i];
 				if ((score = alphabeta(stack, maxd, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false)) > bscore) {
