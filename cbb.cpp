@@ -63,18 +63,23 @@ inline int cbb::score(int player) {
 				)
 		+ 100000*( // Piece Placement
 				player
-				? 5*numBits((pb^cb.k)&0x0FFF000F)-5*numBits((ob^cb.k)&0xF000FFF0)
-				: 5*numBits((pb^cb.k)&0xF000FFF0)-5*numBits((ob^cb.k)&0x0FFF000F)
+				? 3*numBits((pb^cb.k)&0x000F0000)-3*numBits((ob^cb.k)&0x0000F000)
+				+ 5*numBits((pb^cb.k)&0x00F00000)-5*numBits((ob^cb.k)&0x00000F00)
+				+ 7*numBits((pb^cb.k)&0x0F000000)-7*numBits((ob^cb.k)&0x000000F0)
+				: 3*numBits((pb^cb.k)&0x0000F000)-3*numBits((ob^cb.k)&0x000F0000)
+				+ 5*numBits((pb^cb.k)&0x00000F00)-5*numBits((ob^cb.k)&0x00F00000)
+				+ 7*numBits((pb^cb.k)&0x000000F0)-7*numBits((ob^cb.k)&0x0F000000)
 				)
 		+   1000*( // Trade influencer
-				(nrp+nkp) > (nro+nko)
+				(3*nrp+5*nkp) > (3*nro+5*nko)
 				? 24-(nrp+nkp+nro+nko)
 				: (nrp+nkp+nro+nko)
 				)
 		+     10*( // King Placement
-				  5*numBits((pb&cb.k)&0x00066000)-5*numBits((ob&cb.k)&0x00066000)
-				+ 4*numBits((pb&cb.k)&0x00600600)-4*numBits((ob&cb.k)&0x00600600)
+				  7*numBits((pb&cb.k)&0x00066000)-7*numBits((ob&cb.k)&0x00066000)
+				+ 5*numBits((pb&cb.k)&0x00600600)-5*numBits((ob&cb.k)&0x00600600)
 				+ 3*numBits((pb&cb.k)&0x06000060)-3*numBits((ob&cb.k)&0x06000060)
+				+ 1*numBits((pb&cb.k)&0xF000000F)-1*numBits((ob&cb.k)&0xF000000F)
 				)
 		+ rnd(rg); // Random twiddle
 
@@ -129,9 +134,9 @@ int *cbb::aiPickMove(int timeLimit) {
 		nlmm1 = nlm-1;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
 			bscore = std::numeric_limits<int>::min();
+			if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/4)
+				goto BREAK;
 			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
-				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*(nlmm1-1)/(nlmm1+2))
-					goto BREAK;
 				stack[0] = lms[i];
 				if ((score = alphabeta(stack, maxd, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false)) > bscore) {
 					if (score == std::numeric_limits<int>::max()) {
@@ -142,7 +147,7 @@ int *cbb::aiPickMove(int timeLimit) {
 						tpick = i;
 					}
 				}
-				/* std::cout << i << ": " << score << "\n"; */
+				/* std::cerr << i << ": " << score << "\n"; */
 			}
 			pick[0] = tpick;
 		}
