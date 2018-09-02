@@ -243,16 +243,16 @@ class cbb {
 			p = player;
 		}
 
-		/* return the score of the board for #player */
+		/** return the score of the board for #player **/
 		inline int score(int player);
 
-		/* perform an alpha beta search on checker board node and return the score*/
+		/** perform an alpha beta search on checker board node and return the score **/
 		inline int alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP);
 
 		/** update the board with move picked by human **/
 		int *aiPickMove(int timeLimit);
 		/* returns {                                               *
-		 *          # of move picked (-1 if lost),                 *
+		 *          # of move picked (-1 if none available),       *
 		 *          the time in milliseconds spent picking a move, *
 		 *          the depth searched,                            *
 		 *          whether max depth was only partially searched  *

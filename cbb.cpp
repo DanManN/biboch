@@ -11,6 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <random>
 #include <cmath>
 #include <cstring>
 
@@ -23,17 +24,17 @@ cbb::cbb(const char sboard[32], int player) {
 	for (int i = 0; i < 32; i++) {
 		switch (sboard[i]) {
 			case '1':
-				cb.w |= 1<<i;
-				break;
-			case '2':
 				cb.b |= 1<<i;
 				break;
-			case '3':
+			case '2':
 				cb.w |= 1<<i;
+				break;
+			case '3':
+				cb.b |= 1<<i;
 				cb.k |= 1<<i;
 				break;
 			case '4':
-				cb.b |= 1<<i;
+				cb.w |= 1<<i;
 				cb.k |= 1<<i;
 				break;
 		}
@@ -41,17 +42,43 @@ cbb::cbb(const char sboard[32], int player) {
 	p = player;
 }
 
+std::mt19937 rg(time(NULL));
+std::uniform_int_distribution<int> rnd(0,9);
+
 inline int cbb::score(int player) {
 	uint32_t pb = player ? cb.b : cb.w;
 	uint32_t ob = player ? cb.w : cb.b;
+	uint32_t nrp = numBits(pb^cb.k);
+	uint32_t nkp = numBits(pb&cb.k);
+	uint32_t nro = numBits(ob^cb.k);
+	uint32_t nko = numBits(ob&cb.k);
 	//std::cerr << pb << " " << ob << "\n";
-	if (numBits(ob) == 0)
-		return std::numeric_limits<int>::max();
-	return (numBits(pb)) 
-			+ (numBits(pb&cb.k)*3)
-			- (numBits(ob))
-			- (numBits(ob&cb.k)*3)
-			;
+	/* if (numBits(ob) == 0) */
+	/* 	return std::numeric_limits<int>::max(); */
+	/* if (numBits(pb) == 0) */
+	/* 	return std::numeric_limits<int>::min(); */
+	return
+		10000000*( // Piece/King counts
+				6*(nkp-nko)+4*(nrp-nro)
+				)
+		+ 100000*( // Piece Placement
+				player
+				? 5*numBits((pb^cb.k)&0x0FF0000F)-3*numBits((ob^cb.k)&0xF0000FF0)
+				: 5*numBits((pb^cb.k)&0xF0000FF0)-3*numBits((ob^cb.k)&0x0FF0000F)
+				)
+		+   1000*( // Trade influencer
+				(nrp+nkp) > (nro+nko)
+				? 24-(nrp+nkp+nro+nko)
+				: (nrp+nkp+nro+nko)
+				)
+		+     10*( // King Placement
+				  7*numBits((pb&cb.k)&0x00066000)-4*numBits((ob&cb.k)&0x00066000)
+				+ 6*numBits((pb&cb.k)&0x00600600)-4*numBits((ob&cb.k)&0x00600600)
+				+ 5*numBits((pb&cb.k)&0x06000060)-4*numBits((ob&cb.k)&0x06000060)
+				)
+		+ rnd(rg);                                                                // Random twiddle
+
+
 }
 
 inline int cbb::alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP) {
@@ -102,14 +129,14 @@ int *cbb::aiPickMove(int timeLimit) {
 		nlmm1 = nlm-1;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
 			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
-				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*nlmm1/(nlmm1+3))
-					goto BREAK;
 				stack[0] = lms[i];
 				if ((score = alphabeta(stack, maxd, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false)) > bscore) {
 					bscore = score;
 					pick[0] = i;
 				}
-				if (bscore == std::numeric_limits<int>::max())
+				/* if (bscore == std::numeric_limits<int>::max()) */
+				/* 	goto BREAK; */
+				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit*(nlmm1-1)/(nlmm1+2))
 					goto BREAK;
 			}
 		}

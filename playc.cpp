@@ -5,11 +5,11 @@
 int main() {
 	std::string input;
 
-	std::cout << "Will player #0 be the computer? (y/N): ";
+	std::cout << "Will player #0 (white) be the computer? (y/N): ";
 	std::getline(std::cin,input);
 	bool player0c = std::tolower(input[0]) == 'y';
 
-	std::cout << "Will player #1 be the computer? (y/N): ";
+	std::cout << "Will player #1 (black) be the computer? (y/N): ";
 	std::getline(std::cin,input);
 	bool player1c = std::tolower(input[0]) == 'y';
 
@@ -34,7 +34,7 @@ int main() {
 				std::cout << "File '" << input << "' not found!\n";
 			}
 		} else {
-			board = "22222222222200000000111111111111";
+			board = "11111111111100000000222222222222";
 		}
 	}
 
@@ -59,27 +59,23 @@ int main() {
 	int gamewon = -1;
 	while (gamewon < 0) {
 		int *aimove;
+		if (game.printlms() == 0) {
+			gamewon = !game.getPlayer();
+			break;
+		}
+		std::cout << "\nPlayer " << game.getPlayer() << "'s Turn:\n";
 		if ((player0c && game.getPlayer() == 0) || (player1c && game.getPlayer() == 1)) {
-			game.printlms();
+			std::cout << "Computer Player...\n";
 			aimove = game.aiPickMove(timeLimit*1000);
-			if(aimove[0] >= 0) {
-				std::cout << "\nComputer Player " << !game.getPlayer() \
-					<< " took move #" << aimove[0] \
-					<< " searching for " << aimove[1]/1000.0 \
-					<< " seconds to a maximum " << (aimove[3] ? "partial ": "") << "depth of " << aimove[2] << "\n";
-				game.printcb();
-			} else {
-				gamewon = !game.getPlayer();
-				break;
-			}
+			std::cout << "took move #" << aimove[0]
+					<< " searching for " << aimove[1]/1000.0
+					<< " seconds to a maximum " << (aimove[3] ? "partial ": "") 
+					<< "depth of " << aimove[2] << "\n";
+			game.printcb();
 		} else {
-			if (game.printlms() == 0) {
-				gamewon = !game.getPlayer();
-				break;
-			}
 			bool valid;
 			do {
-				std::cout << "\nPlayer " << game.getPlayer() << ", pick a move: #";
+				std::cout << "Pick a move: #";
 				std::getline(std::cin,input);
 				try {
 					pick = std::stoi(input);
