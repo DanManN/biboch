@@ -28,7 +28,7 @@ int main() {
 					board += '0' + n;
 				}
 				file >> player;
-				player--;
+				player=2-player;
 				file >> timeLimit;
 			} else {
 				std::cout << "File '" << input << "' not found!\n";
