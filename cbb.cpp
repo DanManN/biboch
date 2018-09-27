@@ -181,6 +181,9 @@ void cbb::printcb() {
 		for (int c = 0; c < 4; c++) {
 			if (r % 2 == 0 || c > 0) std::cout << "██████";
 			int ind = 4*r+c;
+
+			if (cb.w>>ind & 1) std::cout << "\033[1;31;47m";
+
 			if (cb.k>>ind & 1) std::cout << " ⟆";
 			else std::cout << "  ";
 
@@ -190,6 +193,8 @@ void cbb::printcb() {
 
 			if (cb.k>>ind & 1) std::cout << "⟅ ";
 			else std::cout << "  ";
+
+			if (cb.w>>ind & 1) std::cout << "\033[1;30;47m";
 		}
 		if (r % 2 != 0) std::cout << "██████";
 		std::cout << "\n";

@@ -5,7 +5,7 @@
 int main() {
 	std::string input;
 
-	std::cout << "Will player #0 (white) be the computer? (y/N): ";
+	std::cout << "Will player #0 (red) be the computer? (y/N): ";
 	std::getline(std::cin,input);
 	bool player0c = std::tolower(input[0]) == 'y';
 
