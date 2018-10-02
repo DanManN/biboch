@@ -54,14 +54,15 @@ inline int cbb::score(int player) {
 	uint32_t nko = numBits(ob&cb.k);
 	//std::cerr << pb << " " << ob << "\n";
 	if (numBits(ob) == 0)
-		return std::numeric_limits<int>::max();
-	/* if (numBits(pb) == 0) */
-	/* 	return std::numeric_limits<int>::min(); */
+		return 100000000+rnd(rg);
+	if (numBits(pb) == 0)
+		return -100000000+rnd(rg);
+
 	return
 		10000000*( // Piece/King counts
 				5*nkp+3*nrp-5*nko-3*nro
 				)
-		+ 100000*( // Piece Placement
+		+ 000000*( // Piece Placement
 				player
 				? 3*numBits((pb^cb.k)&0x000F0000)-3*numBits((ob^cb.k)&0x0000F000)
 				+ 5*numBits((pb^cb.k)&0x00F00000)-5*numBits((ob^cb.k)&0x00000F00)
@@ -70,12 +71,12 @@ inline int cbb::score(int player) {
 				+ 5*numBits((pb^cb.k)&0x00000F00)-5*numBits((ob^cb.k)&0x00F00000)
 				+ 7*numBits((pb^cb.k)&0x000000F0)-7*numBits((ob^cb.k)&0x0F000000)
 				)
-		+   1000*( // Trade influencer
+		+   0000*( // Trade influencer
 				(3*nrp+5*nkp) > (3*nro+5*nko)
 				? 24-(nrp+nkp+nro+nko)
 				: (nrp+nkp+nro+nko)
 				)
-		+     10*( // King Placement
+		+     00*( // King Placement
 				  7*numBits((pb&cb.k)&0x00066000)-7*numBits((ob&cb.k)&0x00066000)
 				+ 5*numBits((pb&cb.k)&0x00600600)-5*numBits((ob&cb.k)&0x00600600)
 				+ 3*numBits((pb&cb.k)&0x06000060)-3*numBits((ob&cb.k)&0x06000060)
@@ -86,33 +87,23 @@ inline int cbb::score(int player) {
 
 }
 
-inline int cbb::alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP) {
+inline int cbb::negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int alpha, int beta) {
 	int score, bscore, i;
 
-	if (d == 0)
-		return node->score(p);
+	if (d == maxd)
+		return node->score(!node->p);
 	node->genLegalMoves(&node[1]);
 	if (nlm == 0)
-		return node->score(p);
-	if (mP) {
-		bscore = std::numeric_limits<int>::min();
-		for (i = nlm; i > 0; i--) {
-			if ((score = alphabeta(&node[i], d - 1, alpha, beta, false)) > bscore)
-				bscore = score;
-			if (bscore > alpha)
-				alpha = bscore;
-			if (alpha >= beta)
-				break;
-		}
-	} else {
-		bscore = std::numeric_limits<int>::max();
-		for (i = nlm; i > 0; i--) {
-			if ((score = alphabeta(&node[i], d - 1, alpha, beta, true)) < bscore)
-				bscore = score;
-			if (bscore < beta)
-				beta = bscore;
-			if (alpha >= beta)
-				break;
+		return node->score(!node->p);
+	bscore = std::numeric_limits<int>::min();
+	for (i = nlm; i > 0; i--) {
+		if ((score = -negalphabeta(&node[i], d+1, maxd, -beta, -alpha)) > bscore)
+			bscore = score;
+		if (bscore <= alpha)
+			alpha = bscore;
+		if (alpha >= beta) {
+			bscore++;
+			break;
 		}
 	}
 	return bscore;
@@ -134,13 +125,14 @@ int *cbb::aiPickMove(int timeLimit) {
 		nlmm1 = nlm-1;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
 			bscore = std::numeric_limits<int>::min();
-			if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/4)
-				goto BREAK;
 			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
+				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/2)
+					goto BREAK;
 				stack[0] = lms[i];
-				if ((score = alphabeta(stack, maxd, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false)) > bscore) {
+				if ((score = -negalphabeta(stack, 0, maxd, std::numeric_limits<int>::max(), std::numeric_limits<int>::min())) > bscore) {
 					if (score == std::numeric_limits<int>::max()) {
 						pick[0] = i;
+						/* std::cerr << i << ": " << score << "\n"; */
 						goto BREAK;
 					} else {
 						bscore = score;
@@ -210,7 +202,7 @@ void cbb::printcb() {
 
 uint32_t cbb::printlms() {
 	for (int i = 0; i < MAX_CJUMPS; i++)
-		for (int j = 1; j < nlm; j++)
+		for (int j = 1; j < MAX_LMS; j++)
 			jumps[i][j] = {0,0,0};
 
 	genLegalMoves();

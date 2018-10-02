@@ -247,7 +247,7 @@ class cbb {
 		inline int score(int player);
 
 		/** perform an alpha beta search on checker board node and return the score **/
-		inline int alphabeta(cbb *node, uint32_t d, int alpha, int beta, bool mP);
+		inline int negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int alpha, int beta);
 
 		/** update the board with move picked by human **/
 		int *aiPickMove(int timeLimit);
