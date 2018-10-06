@@ -4,6 +4,7 @@
  * cbb.h: (checkerboard bit board class)
  *   - specifies checkerboard layout
  *   - defines/implements functions for finding valid moves
+ *   - defines functions for human/AI game play and score
  *   - checkerboard bit board indexed as below
  *
  *     00  01  02  03
@@ -20,7 +21,8 @@
 #define _CBB_H
 
 #include <limits>
-#include <cstdint>
+#include <cstdlib>
+#include "utils.h"
 //#include <iostream>
 
 class cbb {
@@ -59,40 +61,18 @@ class cbb {
 		static cbb lms[MAX_LMS];                 // array for holding legal moves
 		static int nlm;                          // variable to hold # of legal moves
 		static cbb stack[STACK_SIZE];            // stack for alphabeta search
-		static board jumps[MAX_CJUMPS][MAX_LMS]; //traceback array for showing jumps
+		static board jumps[MAX_CJUMPS][MAX_LMS]; // traceback array for showing jumps
+		static const uint32_t coords[];          // array of coordinates; checker of index i has coordinate coords[i]
 
-		#define UR3 (1<<24 | 1<<25 | 1<<26 | 1<<16 | 1<<17 | 1<<18 | 1<<8 | 1<<9 | 1<<10)
+		#define UR3 (1<<24 | 1<<25 | 1<<26 | 1<<16 | 1<<17 | 1<<18 | 1<<8  | 1<<9  | 1<<10)
 		#define UL5 (1<<29 | 1<<30 | 1<<31 | 1<<21 | 1<<22 | 1<<23 | 1<<13 | 1<<14 | 1<<15 | 1<<05 | 1<<06 | 1<<07)
-		#define DR5 (1<<0 | 1<<1 | 1<<2 | 1<<8 | 1<<9 | 1<<10 | 1<<16 | 1<<17 | 1<<18 | 1<<24 | 1<<25 | 1<<26)
-		#define DL3 (1<<5 | 1<<6 | 1<<7 | 1<<13 | 1<<14 | 1<<15 | 1<<21 | 1<<22 | 1<<23)
+		#define DR5 (1<<0  | 1<<1  | 1<<2  | 1<<8  | 1<<9  | 1<<10 | 1<<16 | 1<<17 | 1<<18 | 1<<24 | 1<<25 | 1<<26)
+		#define DL3 (1<<5  | 1<<6  | 1<<7  | 1<<13 | 1<<14 | 1<<15 | 1<<21 | 1<<22 | 1<<23)
 
-		inline uint32_t reverseBits(uint32_t b32) {
-			// Thanks Sean Eron Anderson!
-			// http://graphics.stanford.edu/~seander/bithacks.html
-
-			// swap odd and even bits
-			b32 = ((b32 >> 1) & 0x55555555) | ((b32 & 0x55555555) << 1);
-			// swap consecutive pairs
-			b32 = ((b32 >> 2) & 0x33333333) | ((b32 & 0x33333333) << 2);
-			// swap nibbles ...
-			b32 = ((b32 >> 4) & 0x0F0F0F0F) | ((b32 & 0x0F0F0F0F) << 4);
-			// swap bytes
-			b32 = ((b32 >> 8) & 0x00FF00FF) | ((b32 & 0x00FF00FF) << 8);
-			// swap 2-byte long pairs
-			b32 = ( b32 >> 16             ) | ( b32               << 16);
-
-			return b32;
-		}
-
-		inline uint32_t numBits(uint32_t b32) {
-			// Thanks Sean Eron Anderson!
-			// http://graphics.stanford.edu/~seander/bithacks.html
-
-			b32 = b32 - ((b32 >> 1) & 0x55555555);                    // reuse input as temp
-			b32 = (b32 & 0x33333333) + ((b32 >> 2) & 0x33333333);     // temp
-			b32 = (((b32 + (b32 >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
-
-			return b32;
+		inline uint32_t distance(uint32_t p1, uint32_t p2) {
+			int c1 = coords[pow2log2(p1)];
+			int c2 = coords[pow2log2(p2)];
+			return abs((c1%10)-(c2%10)) + abs((c1/10)-(c2/10));
 		}
 
 		inline void flipboard(board &bbc) {
@@ -231,7 +211,7 @@ class cbb {
 			if (p) flipboard(cb);
 		}
 
-		
+
 	public:
 
 		/** construct board from string **/
@@ -244,10 +224,10 @@ class cbb {
 		}
 
 		/** return the score of the board for #player **/
-		inline int score(int player);
+		inline int64_t score(int player, int depth);
 
 		/** perform an alpha beta search on checker board node and return the score **/
-		inline int negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int alpha, int beta);
+		inline int negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int64_t alpha, int64_t beta);
 
 		/** update the board with move picked by human **/
 		int *aiPickMove(int timeLimit);

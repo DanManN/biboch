@@ -5,7 +5,7 @@
  *   - implements constructor and display functions
  *   - implements functions for finding valid moves
  *   - implements functions for updating board with chosen moves
- *
+ *   - implements the the AI's search stategy and evaluation functions
  */
 #include "cbb.h"
 #include <iostream>
@@ -19,6 +19,17 @@ cbb cbb::lms[MAX_LMS];
 int cbb::nlm;
 cbb cbb::stack[STACK_SIZE];
 cbb::board cbb::jumps[MAX_CJUMPS][MAX_LMS];
+
+const uint32_t cbb::coords[] = {
+	  46, 55, 64, 73,
+	36, 45, 54, 63,
+	  35, 44, 53, 62,
+	25, 34, 43, 52,
+	  24, 33, 42, 51,
+	14, 23, 32, 41,
+	  13, 22, 31, 40,
+	03, 12, 21, 30
+};
 
 cbb::cbb(const char sboard[32], int player) {
 	for (int i = 0; i < 32; i++) {
@@ -45,64 +56,80 @@ cbb::cbb(const char sboard[32], int player) {
 std::mt19937 rg(time(NULL));
 std::uniform_int_distribution<int> rnd(0,9);
 
-inline int cbb::score(int player) {
-	uint32_t pb = player ? cb.b : cb.w;
-	uint32_t ob = player ? cb.w : cb.b;
-	uint32_t nrp = numBits(pb^cb.k);
-	uint32_t nkp = numBits(pb&cb.k);
-	uint32_t nro = numBits(ob^cb.k);
-	uint32_t nko = numBits(ob&cb.k);
+inline int64_t cbb::score(int player, int depth) {
+	int64_t score = 0;
 	//std::cerr << pb << " " << ob << "\n";
-	if (numBits(ob) == 0)
-		return 100000000+rnd(rg);
-	if (numBits(pb) == 0)
-		return -100000000+rnd(rg);
+	if (numBits(cb.b) == 0)
+		score = 10000000000-(depth*10);
+	else if (numBits(cb.w) == 0)
+		score = (depth*10)-10000000000;
+	else {
+		// Piece/King counts
+		score = 1000000*(5*numBits(cb.w&cb.k)+3*numBits(cb.w^(cb.w&cb.k))-5*numBits(cb.b&cb.k)-3*numBits(cb.b^(cb.b&cb.k)));
+		
+		// King Placement
+		/* if (numBits(cb.w^cb.b) <= 12 && numBits(cb.k) > numBits(cb.w^cb.b)/2) { */
+		/* 	uint32_t ppcs = cb.w; */
+		/* 	uint32_t ppce, opce, opcs; */
+		/* 	while (ppcs) { */
+		/* 		ppce = ppcs-1; */
+		/* 		ppcs &= ppce; */
+		/* 		ppce = (ppce^ppcs) + 1; */
 
-	return
-		10000000*( // Piece/King counts
-				5*nkp+3*nrp-5*nko-3*nro
-				)
-		+ 000000*( // Piece Placement
-				player
-				? 3*numBits((pb^cb.k)&0x000F0000)-3*numBits((ob^cb.k)&0x0000F000)
-				+ 5*numBits((pb^cb.k)&0x00F00000)-5*numBits((ob^cb.k)&0x00000F00)
-				+ 7*numBits((pb^cb.k)&0x0F000000)-7*numBits((ob^cb.k)&0x000000F0)
-				: 3*numBits((pb^cb.k)&0x0000F000)-3*numBits((ob^cb.k)&0x000F0000)
-				+ 5*numBits((pb^cb.k)&0x00000F00)-5*numBits((ob^cb.k)&0x00F00000)
-				+ 7*numBits((pb^cb.k)&0x000000F0)-7*numBits((ob^cb.k)&0x0F000000)
-				)
-		+   0000*( // Trade influencer
-				(3*nrp+5*nkp) > (3*nro+5*nko)
-				? 24-(nrp+nkp+nro+nko)
-				: (nrp+nkp+nro+nko)
-				)
-		+     00*( // King Placement
-				  7*numBits((pb&cb.k)&0x00066000)-7*numBits((ob&cb.k)&0x00066000)
-				+ 5*numBits((pb&cb.k)&0x00600600)-5*numBits((ob&cb.k)&0x00600600)
-				+ 3*numBits((pb&cb.k)&0x06000060)-3*numBits((ob&cb.k)&0x06000060)
-				+ 1*numBits((pb&cb.k)&0xF000000F)-1*numBits((ob&cb.k)&0xF000000F)
-				)
-		+ rnd(rg); // Random twiddle
+		/* 		opcs = cb.b; */
+		/* 		while (opcs) { */
+		/* 			opce = opcs-1; */
+		/* 			opcs &= opce; */
+		/* 			opce = (opce^opcs) + 1; */
+
+		/* 			if (score > 0) { */
+		/* 				score -= 100*distance(ppce,opce); */
+		/* 			} else { */
+		/* 				score += 100*distance(ppce,opce); */
+		/* 			} */
+		/* 		} */
+		/* 	} */
+		/* } */
+
+		// Trade Influencer
+		/* if (score > 0) { */
+		/* 	score -= 10000*(numBits(cb.w)+numBits(cb.b)); */
+		/* } else { */
+		/* 	score += 10000*(numBits(cb.w)+numBits(cb.b)); */
+		/* } */
+
+		// Piece Placement
+		/* score +=  10000*( */
+		/* 				  3*numBits((cb.w^(cb.w&cb.k))&0x000F0000)-3*numBits((cb.b^(cb.b&cb.k))&0x0000F000) */
+		/* 				+ 4*numBits((cb.w^(cb.w&cb.k))&0x00F00000)-4*numBits((cb.b^(cb.b&cb.k))&0x00000F00) */
+		/* 				+ 5*numBits((cb.w^(cb.w&cb.k))&0x0F000000)-5*numBits((cb.b^(cb.b&cb.k))&0x000000F0) */
+		/* 				+ 7*numBits((cb.w^(cb.w&cb.k))&0x0000000F)-7*numBits((cb.b^(cb.b&cb.k))&0xF0000000) */
+		/* 				); */
 
 
+		score += rnd(rg);
+	}
+	/* std::cerr << "postscore: " << score << "\n"; */
+	return player ? -score : score;
 }
 
-inline int cbb::negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int alpha, int beta) {
-	int score, bscore, i;
+inline int cbb::negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int64_t alpha, int64_t beta) {
+	int64_t score, bscore;
+	int i;
 
 	if (d == maxd)
-		return node->score(!node->p);
+		return node->score(node->p, d);
 	node->genLegalMoves(&node[1]);
 	if (nlm == 0)
-		return node->score(!node->p);
-	bscore = std::numeric_limits<int>::min();
+		return node->score(node->p, d);
+	bscore = std::numeric_limits<int64_t>::min();
 	for (i = nlm; i > 0; i--) {
 		if ((score = -negalphabeta(&node[i], d+1, maxd, -beta, -alpha)) > bscore)
 			bscore = score;
-		if (bscore <= alpha)
+		if (bscore >= alpha)
 			alpha = bscore;
 		if (alpha >= beta) {
-			bscore++;
+			/* bscore++; */
 			break;
 		}
 	}
@@ -111,7 +138,8 @@ inline int cbb::negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int alpha, in
 
 using namespace std::chrono;
 int *cbb::aiPickMove(int timeLimit) {
-	int score, bscore, nlmm1=0, tpick=0, i=0;
+	int64_t score, bscore;
+	int nlmm1=0, tpick=0, i=0;
 	uint32_t maxd = 0;
 	int *pick = new int[4]{-1};
 
@@ -124,24 +152,23 @@ int *cbb::aiPickMove(int timeLimit) {
 	} else {               // do search
 		nlmm1 = nlm-1;
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
-			bscore = std::numeric_limits<int>::min();
+			bscore = std::numeric_limits<int64_t>::min();
 			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
 				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/2)
 					goto BREAK;
 				stack[0] = lms[i];
-				if ((score = -negalphabeta(stack, 0, maxd, std::numeric_limits<int>::max(), std::numeric_limits<int>::min())) > bscore) {
-					if (score == std::numeric_limits<int>::max()) {
-						pick[0] = i;
-						/* std::cerr << i << ": " << score << "\n"; */
-						goto BREAK;
-					} else {
+				if ((score = -negalphabeta(stack, 0, maxd, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max())) > bscore) {
+					/* if (score == std::numeric_limits<int>::max()) { */
+					/*	pick[0] = i; */
+					/*	goto BREAK; */
+					/* } else { */
 						bscore = score;
 						tpick = i;
-					}
+					/* } */
 				}
-				/* std::cerr << i << ": " << score << "\n"; */
 			}
 			pick[0] = tpick;
+			/* std::cerr << "Score: " << bscore << "\n"; */
 		}
 	}
 	BREAK:
@@ -198,6 +225,7 @@ void cbb::printcb() {
 		std::cout << "\n";
 	}
 	std::cout << "\033[0m";
+	/* std::cerr << "Score: " << score(p,0) << "\n"; */
 }
 
 uint32_t cbb::printlms() {

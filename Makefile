@@ -1,4 +1,7 @@
 PRODUCT := checkers.out
+num := 2
+p0 := y
+p1 := y
 
 CXX := g++
 LINKER := g++
@@ -17,3 +20,8 @@ clean:
 	rm -f checkers.out $(OBJFILES)
 
 .PHONY: clean
+
+sample: $(PRODUCT)
+	echo -e $(p0)"\n"$(p1)"\ntestboards/sampleCheckers"$(num)".txt" | ./checkers.out
+
+.PHONY: sample
