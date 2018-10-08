@@ -58,7 +58,6 @@ class cbb {
 		#define MAX_CJUMPS (16)
 		#define STACK_SIZE (4096)
 
-		static cbb scratch[MAX_LMS];             // temp array for move generation
 		static cbb lms[MAX_LMS];                 // array for holding legal moves
 		static int nlm;                          // variable to hold # of legal moves
 		static cbb stack[STACK_SIZE];            // stack for alphabeta search

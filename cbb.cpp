@@ -15,7 +15,6 @@
 #include <cmath>
 #include <cstring>
 
-cbb cbb::scratch[MAX_LMS];
 cbb cbb::lms[MAX_LMS];
 int cbb::nlm;
 cbb cbb::stack[STACK_SIZE];
@@ -66,7 +65,6 @@ inline int64_t cbb::score(int player) {
 	score =  (5*numBits(pb&cb.k))+(3*numBits(pb^(pb&cb.k)));
 	score -= (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)));
 	score *= 1000000000;
-	kpcount = score;
 
 	// King Placement
 	if (numBits(pb^ob) <= 12 && numBits(cb.k) > numBits(pb^ob)/2) {
@@ -88,9 +86,8 @@ inline int64_t cbb::score(int player) {
 				if (dist < mindist)
 					mindist = dist;
 			}
-
 		}
-		if (kpcount > 0) {
+		if (score > 0) {
 			score -= 1000*maxdist+1000*mindist;
 		} else {
 			score += 1000*maxdist+1000*mindist;
@@ -98,7 +95,7 @@ inline int64_t cbb::score(int player) {
 	}
 
 	// Trade Influencer
-	/* if (kpcount > 0) { */
+	/* if (score > 0) { */
 	/* 	score -= 1000000*(numBits(pb)+numBits(ob)); */
 	/* } else { */
 	/* 	score += 1000000*(numBits(pb)+numBits(ob)); */
@@ -120,8 +117,8 @@ inline int64_t cbb::negalphabeta(cbb *node, int d, int maxd, int64_t alpha, int6
 	int i;
 
 	node->genLegalMoves(&node[1]);
-	if (nlm == 0)
-		return score = (10*d)-1000000000000;
+	if (node->nlm == 0)
+		return (10*d)-1000000000000;
 	if (d == maxd)
 		return node->score(node->p);
 
