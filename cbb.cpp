@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstring>
 
+cbb cbb::scratch[MAX_LMS];
 cbb cbb::lms[MAX_LMS];
 int cbb::nlm;
 cbb cbb::stack[STACK_SIZE];
@@ -54,84 +55,83 @@ cbb::cbb(const char sboard[32], int player) {
 }
 
 std::mt19937 rg(time(NULL));
-std::uniform_int_distribution<int> rnd(0,9);
+std::uniform_int_distribution<int> rnd(-5,5);
 
-inline int64_t cbb::score(int player, int depth) {
-	int64_t score = 0;
-	//std::cerr << pb << " " << ob << "\n";
-	if (numBits(cb.b) == 0)
-		score = 10000000000-(depth*10);
-	else if (numBits(cb.w) == 0)
-		score = (depth*10)-10000000000;
-	else {
-		// Piece/King counts
-		score = 1000000*(5*numBits(cb.w&cb.k)+3*numBits(cb.w^(cb.w&cb.k))-5*numBits(cb.b&cb.k)-3*numBits(cb.b^(cb.b&cb.k)));
-		
-		// King Placement
-		/* if (numBits(cb.w^cb.b) <= 12 && numBits(cb.k) > numBits(cb.w^cb.b)/2) { */
-		/* 	uint32_t ppcs = cb.w; */
-		/* 	uint32_t ppce, opce, opcs; */
-		/* 	while (ppcs) { */
-		/* 		ppce = ppcs-1; */
-		/* 		ppcs &= ppce; */
-		/* 		ppce = (ppce^ppcs) + 1; */
+inline int64_t cbb::score(int player) {
+	int64_t score = 0, kpcount;
+	uint32_t pb = player ? cb.b : cb.w;
+	uint32_t ob = player ? cb.w : cb.b;
 
-		/* 		opcs = cb.b; */
-		/* 		while (opcs) { */
-		/* 			opce = opcs-1; */
-		/* 			opcs &= opce; */
-		/* 			opce = (opce^opcs) + 1; */
+	// Piece/King counts
+	score =  (5*numBits(pb&cb.k))+(3*numBits(pb^(pb&cb.k)));
+	score -= (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)));
+	score *= 1000000000;
+	kpcount = score;
 
-		/* 			if (score > 0) { */
-		/* 				score -= 100*distance(ppce,opce); */
-		/* 			} else { */
-		/* 				score += 100*distance(ppce,opce); */
-		/* 			} */
-		/* 		} */
-		/* 	} */
-		/* } */
+	// King Placement
+	if (numBits(pb^ob) <= 12 && numBits(cb.k) > numBits(pb^ob)/2) {
+		uint32_t ppcs = pb;
+		uint32_t ppce, opce, opcs, dist, maxdist=0, mindist=7;
+		while (ppcs) {
+			ppce = ppcs-1;
+			ppcs &= ppce;
+			ppce = (ppce^ppcs) + 1;
 
-		// Trade Influencer
-		/* if (score > 0) { */
-		/* 	score -= 10000*(numBits(cb.w)+numBits(cb.b)); */
-		/* } else { */
-		/* 	score += 10000*(numBits(cb.w)+numBits(cb.b)); */
-		/* } */
+			opcs = ob;
+			while (opcs) {
+				opce = opcs-1;
+				opcs &= opce;
+				opce = (opce^opcs) + 1;
+				dist = distance(ppce,opce);
+				if (dist > maxdist)
+					maxdist = dist;
+				if (dist < mindist)
+					mindist = dist;
+			}
 
-		// Piece Placement
-		/* score +=  10000*( */
-		/* 				  3*numBits((cb.w^(cb.w&cb.k))&0x000F0000)-3*numBits((cb.b^(cb.b&cb.k))&0x0000F000) */
-		/* 				+ 4*numBits((cb.w^(cb.w&cb.k))&0x00F00000)-4*numBits((cb.b^(cb.b&cb.k))&0x00000F00) */
-		/* 				+ 5*numBits((cb.w^(cb.w&cb.k))&0x0F000000)-5*numBits((cb.b^(cb.b&cb.k))&0x000000F0) */
-		/* 				+ 7*numBits((cb.w^(cb.w&cb.k))&0x0000000F)-7*numBits((cb.b^(cb.b&cb.k))&0xF0000000) */
-		/* 				); */
-
-
-		score += rnd(rg);
+		}
+		if (kpcount > 0) {
+			score -= 1000*maxdist+1000*mindist;
+		} else {
+			score += 1000*maxdist+1000*mindist;
+		}
 	}
-	/* std::cerr << "postscore: " << score << "\n"; */
-	return player ? -score : score;
+
+	// Trade Influencer
+	/* if (kpcount > 0) { */
+	/* 	score -= 1000000*(numBits(pb)+numBits(ob)); */
+	/* } else { */
+	/* 	score += 1000000*(numBits(pb)+numBits(ob)); */
+	/* } */
+
+	// Piece Placement
+	/* score +=  10000*( */
+	/* 				  3*numBits((pb^(pb&cb.k))&0x000F0000)-3*numBits((ob^(ob&cb.k))&0x0000F000) */
+	/* 				+ 4*numBits((pb^(pb&cb.k))&0x00F00000)-4*numBits((ob^(ob&cb.k))&0x00000F00) */
+	/* 				+ 5*numBits((pb^(pb&cb.k))&0x0F000000)-5*numBits((ob^(ob&cb.k))&0x000000F0) */
+	/* 				+ 7*numBits((pb^(pb&cb.k))&0x0000000F)-7*numBits((ob^(ob&cb.k))&0xF0000000) */
+	/* 				); */
+
+	return score + rnd(rg);
 }
 
-inline int cbb::negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int64_t alpha, int64_t beta) {
+inline int64_t cbb::negalphabeta(cbb *node, int d, int maxd, int64_t alpha, int64_t beta) {
 	int64_t score, bscore;
 	int i;
 
-	if (d == maxd)
-		return node->score(node->p, d);
 	node->genLegalMoves(&node[1]);
 	if (nlm == 0)
-		return node->score(node->p, d);
+		return score = (10*d)-1000000000000;
+	if (d == maxd)
+		return node->score(node->p);
+
 	bscore = std::numeric_limits<int64_t>::min();
+	score = bscore;
 	for (i = nlm; i > 0; i--) {
-		if ((score = -negalphabeta(&node[i], d+1, maxd, -beta, -alpha)) > bscore)
-			bscore = score;
-		if (bscore >= alpha)
-			alpha = bscore;
-		if (alpha >= beta) {
-			/* bscore++; */
-			break;
-		}
+		score = -negalphabeta(&node[i], d+1, maxd, -beta, -alpha);
+		if (score > bscore) bscore = score;
+		if (score > alpha) alpha = score;
+		/* if (alpha >= beta) return alpha; */
 	}
 	return bscore;
 }
@@ -154,21 +154,17 @@ int *cbb::aiPickMove(int timeLimit) {
 		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
 			bscore = std::numeric_limits<int64_t>::min();
 			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
-				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/2)
+				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/3)
 					goto BREAK;
 				stack[0] = lms[i];
-				if ((score = -negalphabeta(stack, 0, maxd, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max())) > bscore) {
-					/* if (score == std::numeric_limits<int>::max()) { */
-					/*	pick[0] = i; */
-					/*	goto BREAK; */
-					/* } else { */
-						bscore = score;
-						tpick = i;
-					/* } */
+				score = -negalphabeta(stack, 0, maxd, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max());
+				if (score > bscore) {
+					bscore = score;
+					tpick = i;
 				}
 			}
 			pick[0] = tpick;
-			/* std::cerr << "Score: " << bscore << "\n"; */
+			std::cerr << bscore << "\n";
 		}
 	}
 	BREAK:
@@ -225,10 +221,9 @@ void cbb::printcb() {
 		std::cout << "\n";
 	}
 	std::cout << "\033[0m";
-	/* std::cerr << "Score: " << score(p,0) << "\n"; */
 }
 
-uint32_t cbb::printlms() {
+int cbb::printlms() {
 	for (int i = 0; i < MAX_CJUMPS; i++)
 		for (int j = 1; j < MAX_LMS; j++)
 			jumps[i][j] = {0,0,0};

@@ -58,6 +58,7 @@ class cbb {
 		#define MAX_CJUMPS (16)
 		#define STACK_SIZE (4096)
 
+		static cbb scratch[MAX_LMS];             // temp array for move generation
 		static cbb lms[MAX_LMS];                 // array for holding legal moves
 		static int nlm;                          // variable to hold # of legal moves
 		static cbb stack[STACK_SIZE];            // stack for alphabeta search
@@ -224,10 +225,10 @@ class cbb {
 		}
 
 		/** return the score of the board for #player **/
-		inline int64_t score(int player, int depth);
+		inline int64_t score(int player);
 
 		/** perform an alpha beta search on checker board node and return the score **/
-		inline int negalphabeta(cbb *node, uint32_t d, uint32_t maxd, int64_t alpha, int64_t beta);
+		inline int64_t negalphabeta(cbb *node, int d, int maxd, int64_t alpha, int64_t beta);
 
 		/** update the board with move picked by human **/
 		int *aiPickMove(int timeLimit);
@@ -258,7 +259,7 @@ class cbb {
 
 
 		/** print legal moves to stdout **/
-		uint32_t printlms();
+		int printlms();
 		/* return number of legal moves */
 
 	};
