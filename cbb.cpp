@@ -56,15 +56,15 @@ cbb::cbb(const char sboard[32], int player) {
 std::mt19937 rg(time(NULL));
 std::uniform_int_distribution<int> rnd(-5,5);
 
-inline int64_t cbb::score(int player) {
-	int64_t score = 0, kpcount;
+inline int cbb::score(int player) {
+	int score = 0;
 	uint32_t pb = player ? cb.b : cb.w;
 	uint32_t ob = player ? cb.w : cb.b;
 
 	// Piece/King counts
 	score =  (5*numBits(pb&cb.k))+(3*numBits(pb^(pb&cb.k)));
 	score -= (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)));
-	score *= 1000000000;
+	score *= 10000;
 
 	// King Placement
 	if (numBits(pb^ob) <= 12 && numBits(cb.k) > numBits(pb^ob)/2) {
@@ -88,9 +88,9 @@ inline int64_t cbb::score(int player) {
 			}
 		}
 		if (score > 0) {
-			score -= 1000*maxdist+1000*mindist;
+			score -= 100*maxdist+100*mindist;
 		} else {
-			score += 1000*maxdist+1000*mindist;
+			score += 100*maxdist+100*mindist;
 		}
 	}
 
@@ -109,59 +109,90 @@ inline int64_t cbb::score(int player) {
 	/* 				+ 7*numBits((pb^(pb&cb.k))&0x0000000F)-7*numBits((ob^(ob&cb.k))&0xF0000000) */
 	/* 				); */
 
-	return score + rnd(rg);
+	score += rnd(rg);
+	return score;
 }
 
-inline int64_t cbb::negalphabeta(cbb *node, int d, int maxd, int64_t alpha, int64_t beta) {
-	int64_t score, bscore;
-	int i;
+inline int cbb::negalphabeta(cbb *node, int d, int maxd, int alpha, int beta) {
+	int score, bscore;
 
 	node->genLegalMoves(&node[1]);
-	if (node->nlm == 0)
-		return (10*d)-1000000000000;
-	if (d == maxd)
-		return node->score(node->p);
-
-	bscore = std::numeric_limits<int64_t>::min();
-	score = bscore;
-	for (i = nlm; i > 0; i--) {
-		score = -negalphabeta(&node[i], d+1, maxd, -beta, -alpha);
-		if (score > bscore) bscore = score;
-		if (score > alpha) alpha = score;
-		/* if (alpha >= beta) return alpha; */
+	if (nlm == 0) {
+		/* std::cerr << "\t"; */
+		/* for (int j = 0; j < d; j++) */
+		/* 	std::cerr << " --- "; */
+		/* std::cerr << ((10*d)-1000000)*(d % 2 ? 1 : -1) << "\n"; */
+		return (10*d)-1000000;
 	}
+	if (d == maxd) {
+		/* std::cerr << "\t"; */
+		/* for (int j = 0; j < d; j++) */
+		/* 	std::cerr << " --- "; */
+		/* std::cerr << node->score(node->p)*(d % 2 ? 1 : -1) << "\n"; */
+		return node->score(node->p);
+	}
+
+	bscore = -10000000;
+	for (int i = nlm; i > 0; i--) {
+		score = -negalphabeta(&node[i], d+1, maxd, -beta, -alpha);
+		if (score > bscore) {
+			bscore = score;
+		}
+		if (score > alpha) {
+			alpha = bscore;
+		}
+		if (alpha >= beta) {
+			bscore++;
+			/* std::cerr << "\t"; */
+			/* for (int j = 0; j < d+1; j++) */
+			/* 	std::cerr << " --- "; */
+			/* std::cerr << "prune\n"; */
+			break;
+		}
+	}
+	/* std::cerr << "\t"; */
+	/* for (int j = 0; j < d; j++) */
+	/* 	std::cerr << " --- "; */
+	/* std::cerr << bscore*(d % 2 ? 1 : -1) << ""; */
+	/* std::cerr << "\t\t\t\t\t\t\t\t" << (d % 2 ? alpha : -beta) << ", " << (d % 2 ? beta : -alpha)  << "\n"; */
 	return bscore;
 }
 
 using namespace std::chrono;
 int *cbb::aiPickMove(int timeLimit) {
-	int64_t score, bscore;
+	int score, bscore;
 	int nlmm1=0, tpick=0, i=0;
-	uint32_t maxd = 0;
+	int maxd = 0;
 	int *pick = new int[4]{-1};
 
 	time_point<system_clock, system_clock::duration> end, start = system_clock::now();
 	genLegalMoves();
-	if (nlm == 0) {        // computer player lost
+	if (nlm == 0) {                 // computer player lost
 		return pick;
-	} else if (nlm == 1) { // only one valid move
+	} else if (nlm == 1) {          // only one valid move
 		pick[0] = 0;
-	} else {               // do search
+	} else {                        // do search
 		nlmm1 = nlm-1;
-		while (++maxd<sizeof(stack)/sizeof(lms)) { // iterative deepening
-			bscore = std::numeric_limits<int64_t>::min();
-			for (i = nlmm1; i >= 0; i--) {         // start search at each legal move
+		while (++maxd<STACK_SIZE) { // iterative deepening
+			int alpha = -10000000;
+			int beta = 10000000;
+			bscore = -10000000;
+			for (i = nlmm1; i >= 0; i--) { // start search at each legal move
 				if (duration_cast<milliseconds>(system_clock::now()-start).count() > timeLimit/3)
 					goto BREAK;
 				stack[0] = lms[i];
-				score = -negalphabeta(stack, 0, maxd, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max());
+				score = -negalphabeta(stack, 0, maxd, -beta, -alpha);
 				if (score > bscore) {
 					bscore = score;
 					tpick = i;
 				}
+				if (score > alpha) {
+					alpha = bscore;
+				}
 			}
 			pick[0] = tpick;
-			std::cerr << bscore << "\n";
+			/* std::cerr << bscore << "\n\n\n"; */
+			std::cout << bscore << "\n";
 		}
 	}
 	BREAK:
