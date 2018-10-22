@@ -111,22 +111,18 @@ inline int cbb::score(int player) {
 			}
 		}
 		score += (score > 0 ? -1 : 1)*PRTY_MED*(maxdist+mindist);
-	}
-
+	} else {
 	// Trade Influencer
-	/* if (score > 0) { */
-	/* 	score -= 1000000*(numBits(pb)+numBits(ob)); */
-	/* } else { */
-	/* 	score += 1000000*(numBits(pb)+numBits(ob)); */
-	/* } */
+	score += (score > 0 ? -1 : 1)*PRTY_MED*(numBits(pb)+numBits(ob));
 
 	// Piece Placement
-	/* score +=  10000*( */
-	/* 				  3*numBits((pb^(pb&cb.k))&0x000F0000)-3*numBits((ob^(ob&cb.k))&0x0000F000) */
-	/* 				+ 4*numBits((pb^(pb&cb.k))&0x00F00000)-4*numBits((ob^(ob&cb.k))&0x00000F00) */
-	/* 				+ 5*numBits((pb^(pb&cb.k))&0x0F000000)-5*numBits((ob^(ob&cb.k))&0x000000F0) */
-	/* 				+ 7*numBits((pb^(pb&cb.k))&0x0000000F)-7*numBits((ob^(ob&cb.k))&0xF0000000) */
-	/* 				); */
+	score += (player ? -1 : 1)*PRTY_LOW*(
+		  3*numBits((cb.w^(cb.w&cb.k))&0x000F0000)-3*numBits((cb.b^(cb.b&cb.k))&0x0000F000)
+		+ 4*numBits((cb.w^(cb.w&cb.k))&0x00F00000)-4*numBits((cb.b^(cb.b&cb.k))&0x00000F00)
+		+ 5*numBits((cb.w^(cb.w&cb.k))&0x0F000000)-5*numBits((cb.b^(cb.b&cb.k))&0x000000F0)
+		+ 7*numBits((cb.w^(cb.w&cb.k))&0x0000000F)-7*numBits((cb.b^(cb.b&cb.k))&0xF0000000)
+	);
+	}
 
 	return score + rnd(rg);
 }
