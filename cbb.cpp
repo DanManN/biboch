@@ -71,8 +71,9 @@ inline int cbb::score(int player) {
 		- (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)))
 	);
 
-	// King Placement (end game only)
+	// End Game Check
 	if (numBits(pb^ob) <= 12 && numBits(cb.k) > numBits(pb^ob)/2) {
+		// Overall Piece Spread
 		uint32_t ppcs = pb|ob;
 		uint32_t ppce, opce, opcs, dist, maxdist=0, mindist=7;
 		while (ppcs) {
@@ -92,6 +93,7 @@ inline int cbb::score(int player) {
 		}
 		score += (score > 0 ? -1 : 1)*PRTY_LOW*(maxdist+mindist);
 
+		// Distance to Opponents Pieces
 		ppcs = pb;
 		maxdist=0;
 		mindist=7;
@@ -112,16 +114,16 @@ inline int cbb::score(int player) {
 		}
 		score += (score > 0 ? -1 : 1)*PRTY_MED*(maxdist+mindist);
 	} else {
-	// Trade Influencer
-	score += (score > 0 ? -1 : 1)*PRTY_MED*(numBits(pb)+numBits(ob));
+		// Trade Influencer
+		score += (score > 0 ? -1 : 1)*PRTY_LOW*(numBits(pb)+numBits(ob));
 
-	// Piece Placement
-	score += (player ? -1 : 1)*PRTY_LOW*(
-		  3*numBits((cb.w^(cb.w&cb.k))&0x000F0000)-3*numBits((cb.b^(cb.b&cb.k))&0x0000F000)
-		+ 4*numBits((cb.w^(cb.w&cb.k))&0x00F00000)-4*numBits((cb.b^(cb.b&cb.k))&0x00000F00)
-		+ 5*numBits((cb.w^(cb.w&cb.k))&0x0F000000)-5*numBits((cb.b^(cb.b&cb.k))&0x000000F0)
-		+ 7*numBits((cb.w^(cb.w&cb.k))&0x0000000F)-7*numBits((cb.b^(cb.b&cb.k))&0xF0000000)
-	);
+		// Piece Placement
+		score += (player ? -1 : 1)*PRTY_MED*(
+			  3*numBits((cb.w^(cb.w&cb.k))&0x000F0000)-3*numBits((cb.b^(cb.b&cb.k))&0x0000F000)
+			+ 4*numBits((cb.w^(cb.w&cb.k))&0x00F00000)-4*numBits((cb.b^(cb.b&cb.k))&0x00000F00)
+			+ 5*numBits((cb.w^(cb.w&cb.k))&0x0F000000)-5*numBits((cb.b^(cb.b&cb.k))&0x000000F0)
+			+ 7*numBits((cb.w^(cb.w&cb.k))&0x0000000F)-7*numBits((cb.b^(cb.b&cb.k))&0xF0000000)
+		);
 	}
 
 	return score + rnd(rg);
