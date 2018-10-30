@@ -66,10 +66,9 @@ inline int cbb::score(int player) {
 	uint32_t ob = player ? cb.w : cb.b;
 
 	// Piece/King counts
-	score = PRTY_HIGH * (
-		  (5*numBits(pb&cb.k))+(3*numBits(pb^(pb&cb.k)))
-		- (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)))
-	);
+	score += (5*numBits(pb&cb.k))+(3*numBits(pb^(pb&cb.k)));
+	score -= (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)));
+	score *= PRTY_HIGH;
 
 	// End Game Check
 	if (numBits(pb^ob) <= 12 && numBits(cb.k) > numBits(pb^ob)/2) {
@@ -114,9 +113,6 @@ inline int cbb::score(int player) {
 		}
 		score += (score > 0 ? -1 : 1)*PRTY_MED*(maxdist+mindist);
 	} else {
-		// Trade Influencer
-		score += (score > 0 ? -1 : 1)*PRTY_LOW*(numBits(pb)+numBits(ob));
-
 		// Piece Placement
 		score += (player ? -1 : 1)*PRTY_MED*(
 			  3*numBits((cb.w^(cb.w&cb.k))&0x000F0000)-3*numBits((cb.b^(cb.b&cb.k))&0x0000F000)
@@ -124,6 +120,9 @@ inline int cbb::score(int player) {
 			+ 5*numBits((cb.w^(cb.w&cb.k))&0x0F000000)-5*numBits((cb.b^(cb.b&cb.k))&0x000000F0)
 			+ 7*numBits((cb.w^(cb.w&cb.k))&0x0000000F)-7*numBits((cb.b^(cb.b&cb.k))&0xF0000000)
 		);
+
+		// Trade Influencer
+		score += (score > 0 ? -1 : 1)*PRTY_LOW*(numBits(pb)+numBits(ob));
 	}
 
 	return score + rnd(rg);
