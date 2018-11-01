@@ -61,14 +61,15 @@ std::uniform_int_distribution<int> rnd(-5,5);
 #define PRTY_LOW  (10)
 
 inline int cbb::score(int player) {
-	int score = 0;
+	int score = 0, bs;
 	uint32_t pb = player ? cb.b : cb.w;
 	uint32_t ob = player ? cb.w : cb.b;
 
 	// Piece/King counts
-	score += (5*numBits(pb&cb.k))+(3*numBits(pb^(pb&cb.k)));
-	score -= (5*numBits(ob&cb.k))+(3*numBits(ob^(ob&cb.k)));
+	score += (7*numBits(pb&cb.k))+(5*numBits(pb^(pb&cb.k)));
+	score -= (7*numBits(ob&cb.k))+(5*numBits(ob^(ob&cb.k)));
 	score *= PRTY_HIGH;
+	bs = score;
 
 	// End Game Check
 	if (numBits(pb^ob) <= 12 && numBits(cb.k) > numBits(pb^ob)/2) {
@@ -90,7 +91,7 @@ inline int cbb::score(int player) {
 				if (dist < mindist) mindist = dist;
 			}
 		}
-		score += (score > 0 ? -1 : 1)*PRTY_LOW*(maxdist+mindist);
+		score += (bs > 0 ? -1 : 1)*PRTY_LOW*(maxdist+mindist);
 
 		// Distance to Opponents Pieces
 		ppcs = pb;
@@ -111,7 +112,7 @@ inline int cbb::score(int player) {
 				if (dist < mindist) mindist = dist;
 			}
 		}
-		score += (score > 0 ? -1 : 1)*PRTY_MED*(maxdist+mindist);
+		score += (bs > 0 ? -1 : 1)*PRTY_MED*(maxdist+mindist);
 	} else {
 		// Piece Placement
 		score += (player ? -1 : 1)*PRTY_MED*(
@@ -122,7 +123,7 @@ inline int cbb::score(int player) {
 		);
 
 		// Trade Influencer
-		score += (score > 0 ? -1 : 1)*PRTY_LOW*(numBits(pb)+numBits(ob));
+		score += (bs > 0 ? -1 : 1)*PRTY_LOW*(numBits(pb)+numBits(ob));
 	}
 
 	return score + rnd(rg);
