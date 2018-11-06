@@ -1,4 +1,8 @@
 *.docx
+*.zip
+.ycm_extra_conf.py
+*.txt
+temp*
 # Created by https://www.gitignore.io/api/vim,c++
 
 ### C++ ###
