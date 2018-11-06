@@ -17,7 +17,7 @@ $(PRODUCT): $(OBJFILES)
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 
 clean:
-	rm -f checkers.out $(OBJFILES)
+	rm -f $(PRODUCT) $(OBJFILES)
 
 .PHONY: clean
 
