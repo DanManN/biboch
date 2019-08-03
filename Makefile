@@ -7,7 +7,7 @@ CXX := g++
 LINKER := g++
 CXXFLAGS := -std=c++11 -Wall -Wextra
 
-SRCFILES := $(wildcard *.cpp) 
+SRCFILES := $(wildcard *.cpp)
 OBJFILES := $(patsubst %.cpp,%.o,$(SRCFILES))
 
 $(PRODUCT): $(OBJFILES)

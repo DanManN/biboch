@@ -13,7 +13,8 @@
 
 #include <cstdint>
 
-inline uint32_t reverseBits(uint32_t b32) {
+inline uint32_t reverseBits(uint32_t b32)
+{
 	// swap odd and even bits
 	b32 = ((b32 >> 1) & 0x55555555) | ((b32 & 0x55555555) << 1);
 	// swap consecutive pairs
@@ -23,23 +24,24 @@ inline uint32_t reverseBits(uint32_t b32) {
 	// swap bytes
 	b32 = ((b32 >> 8) & 0x00FF00FF) | ((b32 & 0x00FF00FF) << 8);
 	// swap 2-byte long pairs
-	b32 = ( b32 >> 16             ) | ( b32               << 16);
+	b32 = (b32 >> 16) | (b32 << 16);
 	return b32;
 }
 
-inline uint32_t numBits(uint32_t b32) {
-	b32 = b32 - ((b32 >> 1) & 0x55555555);                      // reuse input as temp
-	b32 = (b32 & 0x33333333) + ((b32 >> 2) & 0x33333333);       // temp
+inline uint32_t numBits(uint32_t b32)
+{
+	b32 = b32 - ((b32 >> 1) & 0x55555555); // reuse input as temp
+	b32 = (b32 & 0x33333333) + ((b32 >> 2) & 0x33333333); // temp
 	b32 = (((b32 + (b32 >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
 	return b32;
 }
 
-static const int MultiplyDeBruijnBitPosition2[32] = {
-	0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
-	31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
-};
+static const int MultiplyDeBruijnBitPosition2[32] = {0,  1,  28, 2,  29, 14, 24, 3,  30, 22, 20,
+                                                     15, 25, 17, 4,  8,  31, 27, 13, 23, 21, 19,
+                                                     16, 7,  26, 12, 18, 6,  11, 5,  10, 9};
 
-inline uint32_t pow2log2(uint32_t b32) {
+inline uint32_t pow2log2(uint32_t b32)
+{
 	return MultiplyDeBruijnBitPosition2[(uint32_t)(b32 * 0x077CB531U) >> 27];
 }
 

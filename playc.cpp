@@ -1,16 +1,17 @@
-#include "cbb.h"
+#include "cbb.hpp"
 #include <iostream>
 #include <fstream>
 
-int main() {
+int main()
+{
 	std::string input;
 
 	std::cout << "Will player #0 (red) be the computer? (y/N): ";
-	std::getline(std::cin,input);
+	std::getline(std::cin, input);
 	bool player0c = std::tolower(input[0]) == 'y';
 
 	std::cout << "Will player #1 (black) be the computer? (y/N): ";
-	std::getline(std::cin,input);
+	std::getline(std::cin, input);
 	bool player1c = std::tolower(input[0]) == 'y';
 
 	std::string board = "";
@@ -18,7 +19,7 @@ int main() {
 	double timeLimit = 0;
 	while (board == "") {
 		std::cout << "Load a game from a file (press enter for default): ";
-		std::getline(std::cin,input);
+		std::getline(std::cin, input);
 		if (input != "") {
 			std::ifstream file(input);
 			int n;
@@ -28,7 +29,7 @@ int main() {
 					board += '0' + n;
 				}
 				file >> player;
-				player=2-player;
+				player = 2 - player;
 				file >> timeLimit;
 			} else {
 				std::cout << "File '" << input << "' not found!\n";
@@ -40,8 +41,9 @@ int main() {
 
 	if (player0c || player1c) {
 		while (timeLimit <= 0) {
-			std::cout << "Enter a time limit for the computer to make a move (sec): ";
-			std::getline(std::cin,input);
+			std::cout
+			        << "Enter a time limit for the computer to make a move (sec): ";
+			std::getline(std::cin, input);
 			try {
 				timeLimit = std::stod(input);
 				if (timeLimit <= 0)
@@ -52,7 +54,7 @@ int main() {
 		}
 	}
 
-	cbb game = cbb(board.c_str(),player);
+	cbb game = cbb(board.c_str(), player);
 	std::cout << "\n";
 	game.printcb();
 	int pick = 0;
@@ -64,19 +66,20 @@ int main() {
 			break;
 		}
 		std::cout << "\nPlayer " << game.getPlayer() << "'s Turn:\n";
-		if ((player0c && game.getPlayer() == 0) || (player1c && game.getPlayer() == 1)) {
+		if ((player0c && game.getPlayer() == 0) ||
+		    (player1c && game.getPlayer() == 1)) {
 			std::cout << "Computer Player...\n";
-			aimove = game.aiPickMove(timeLimit*1000);
-			std::cout << "took move #" << aimove[0]
-					<< " searching for " << aimove[1]/1000.0
-					<< " seconds to a maximum " << (aimove[3] ? "partial ": "") 
-					<< "depth of " << aimove[2] << "\n";
+			aimove = game.aiPickMove(timeLimit * 1000);
+			std::cout << "took move #" << aimove[0] << " searching for "
+			          << aimove[1] / 1000.0 << " seconds to a maximum "
+			          << (aimove[3] ? "partial " : "") << "depth of " << aimove[2]
+			          << "\n";
 			game.printcb();
 		} else {
 			bool valid;
 			do {
 				std::cout << "Pick a move: #";
-				std::getline(std::cin,input);
+				std::getline(std::cin, input);
 				try {
 					pick = std::stoi(input);
 					valid = game.humanPickMove(pick);
