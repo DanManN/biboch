@@ -252,14 +252,17 @@ void cbb::printcb()
 			if (cb.w >> ind & 1)
 				std::cout << "⊂⊃";
 			else if (cb.b >> ind & 1)
-				std::cout << "⋐⋑";
+				std::cout << "⋐⋑ ";
 			else
 				std::cout << "  ";
 
 			if (cb.k >> ind & 1)
-				std::cout << "⟅ ";
+				std::cout << "⟅";
 			else
-				std::cout << "  ";
+				std::cout << " ";
+
+			if (!(cb.b >> ind & 1))
+				std::cout << " ";
 
 			if (cb.w >> ind & 1)
 				std::cout << "\033[1;30;47m";
